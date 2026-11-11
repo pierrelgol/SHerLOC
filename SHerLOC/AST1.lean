@@ -46,6 +46,8 @@ structure IntegerLiteral where
 structure FloatLiteralDecimal where
   integerPart : IntegerLiteral
   fractionalPart : IntegerLiteral
+  /-- How many digits `fractionalPart` was written with: `1.05` and `1.5` differ only here. -/
+  fractionalDigits : Nat
   scientificPart : IntegerLiteral
   deriving Repr, Inhabited, Nonempty
 
@@ -143,6 +145,7 @@ inductive EnumLiteral where
 inductive ArrayLiteral where
   | array64 (literal : List IntegerLiteral)
   | array1 (literal : List BooleanLiteral)
+  | array32 (literal : List IntegerLiteral)
   deriving Repr, Inhabited, Nonempty
 
 inductive ConvolutionMode where
@@ -153,7 +156,7 @@ inductive ConvolutionMode where
   | b
   | zero
   | two
-  deriving Repr, Inhabited, Nonempty
+  deriving Repr, Inhabited, Nonempty, DecidableEq
 
 structure Convolution where
   lhs : List ConvolutionMode
@@ -174,6 +177,8 @@ inductive FloatType where
   | f8E4M3FNUZ
   | f8E5M2FNUZ
   | f8E4M3B11FNUZ
+  | f8E8M0FNU
+  | f4E2M1FN
   | bf16
   | f16
   | f32
@@ -277,6 +282,8 @@ mutual
     | list (literal : List Literal)
     | dictionary (literal : List Attribute)
     | array (literal : ArrayLiteral)
+    /-- An attribute of another dialect, e.g. `#sdy.sharding<...>`, kept as its source text. -/
+    | dialect (text : String)
     deriving Repr, Inhabited, Nonempty
 
   inductive Constant where

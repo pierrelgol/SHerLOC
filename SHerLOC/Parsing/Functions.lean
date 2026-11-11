@@ -108,7 +108,16 @@ def parseFunction : PState Function := do
   let r : Function := { funcId := name , funcArgAttrs := argAttrs , funcResAttrs := resAttrs , funcType := typ, funcBody := body }
   return r
 
-def parseFunctions : PState (List Function) := do
-  parseListAuxNoSep "}" parseFunction []
+/-- A module holds functions and Shardy mesh declarations. A mesh is kept as an attribute
+`sdy.mesh` of the module holding the dictionary of its operation (`mesh`, `sym_name`). -/
+def parseFunctionOrMesh : PState (Sum Function Attribute) := do
+  if ← is "\"sdy.mesh\"" then
+    let .other _ _ _ attributes _ _ ← parseOtherDialect [] | throw <| ← error "mesh"
+    return .inr (.mk "sdy.mesh" (.mk (.dictionary attributes) none))
+  return .inl (← parseFunction)
+
+def parseFunctions : PState (List Function × List Attribute) := do
+  let items ← parseListAuxNoSep "}" parseFunctionOrMesh []
+  return (items.filterMap Sum.getLeft?, items.filterMap Sum.getRight?)
 
 end StableHLO.Parsing

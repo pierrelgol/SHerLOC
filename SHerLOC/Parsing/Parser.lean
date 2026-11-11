@@ -260,6 +260,7 @@ def parseString : PState String := do
       else escaped := true
       token := token.push c
     else
+      escaped := false
       token := token.push c
   set { st with
     index := st.index + token.length,
@@ -267,6 +268,35 @@ def parseString : PState String := do
    }
   parseItem "\""
   return token
+
+/-- Consumes a dialect attribute `#name<...>` and returns its source text. The body is not
+interpreted: only strings and `<`/`>` nesting are followed, to find where it ends. -/
+def parseDialectAttribute : PState String := do
+  skip
+  let st ← get
+  let mut token := ""
+  let mut depth := 0
+  let mut inString := false
+  let mut opened := false
+  for i in [st.index:st.stop] do
+    let c := st.source.get! ⟨ i ⟩
+    if c = '\n' then break
+    token := token.push c
+    if c = '"' then inString := !inString
+    else if !inString && c = '<' then
+      depth := depth + 1
+      opened := true
+    else if !inString && c = '>' then
+      depth := depth - 1
+      if depth = 0 then break
+  if opened && depth = 0 && token.startsWith "#" then
+    set { st with
+      index := st.index + token.length,
+      columnNumber := st.columnNumber + token.length
+    }
+    return token
+  else
+    throw <| ← error "dialect attribute"
 
 partial def parseListOneorMoreAux (separator : String) (parse : PState T) (acc : List T) : PState (List T) := do
   if ← isParse separator then

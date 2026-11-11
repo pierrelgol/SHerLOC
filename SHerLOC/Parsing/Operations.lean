@@ -26,6 +26,8 @@ def parseInputFuncInputs : PState (List FuncInput) := do
 
 def parseReturn : PState Operation := do
   let arguments ← parseValueUseList
+  if ← is "{" then
+    discard parseAttributes
   parseItem ":"
   let functiontype ← parseFunctionType
   let parseResult := Operation.return arguments functiontype
@@ -191,6 +193,9 @@ mutual
     let mut opInputFuncs := []
     if ← is "(" then
       opInputFuncs ← parseOpInputFuncs
+    -- Attributes that are not properties are printed in a dictionary after the regions.
+    if ← is "{" then
+      opInputAttrs := opInputAttrs ++ (← parseAttributes)
     parseItem ":"
     let functiontype ← parseFunctionType
     let operation := Operation.stablehlo op opInputValues opInputFuncs opInputAttrs opOutputs functiontype
@@ -206,6 +211,9 @@ mutual
     let mut opInputFuncs := []
     if ← is "(" then
       opInputFuncs ← parseOpInputFuncs
+    -- Attributes that are not properties are printed in a dictionary after the regions.
+    if ← is "{" then
+      opInputAttrs := opInputAttrs ++ (← parseAttributes)
     parseItem ":"
     let functiontype ← parseFunctionType
     let operation := Operation.other name opInputValues opInputFuncs opInputAttrs opOutputs functiontype
@@ -317,16 +325,8 @@ partial def parseStableHLO (opOutputs : List ValueId) : PState Operation := do
   | OpCode.sqrt => parseOperationBasic OpCode.sqrt opOutputs
   | OpCode.subtract => parseOperationBasic OpCode.subtract opOutputs
   | OpCode.tan => parseOperationBasic OpCode.tan opOutputs
-  | OpCode.tanh => {
-    let opInputValues ← parseValueUseList
-    -- could provide better error messages by ensuring not dictionnary
-    if opInputValues.length ≠ 1 then throw <| (← error "tanh operation: wrong number of arguments")
-    else {
-      parseItem ":"
-      let functionType ← parseFunctionType
-      return Operation.tanh (opInputValues[0]!) functionType
-    }
-  }
+  -- Like every other op: the special case dropped the name of the result.
+  | OpCode.tanh => parseOperationBasic OpCode.tanh opOutputs
   | OpCode.transpose => parseOperationBasic OpCode.transpose opOutputs
   | OpCode.triangularSolve => parseOperationBasic OpCode.triangularSolve opOutputs
   | OpCode.tuple => parseOperationBasic OpCode.tuple opOutputs
@@ -361,6 +361,10 @@ partial def parseStableHLO (opOutputs : List ValueId) : PState Operation := do
       return r
 
     if ← is "\"chlo." then
+      let r ← parseOtherDialect opOutputs
+      return r
+
+    if ← is "\"sdy." then
       let r ← parseOtherDialect opOutputs
       return r
 

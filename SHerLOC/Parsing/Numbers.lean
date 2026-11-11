@@ -40,8 +40,12 @@ def parseFloatLiteral : PState FloatLiteral := do
     let nat ← parseDecimal
     let integerPart : IntegerLiteral := { sign := sign , decimal := nat }
     let mut fractionalPart : IntegerLiteral := { sign := Sign.plus, decimal := 0 }
+    let mut fractionalDigits := 0
     if ← isParse "." then
+      skip
+      let start := (← get).index
       fractionalPart := {fractionalPart with decimal := ← parseDecimal}
+      fractionalDigits := (← get).index - start
     let mut scientificPart : IntegerLiteral:= { sign := Sign.plus, decimal := 0 }
     if (← isParse "e") || (← isParse "E") then
       let mut scientificSign := Sign.plus
@@ -52,6 +56,7 @@ def parseFloatLiteral : PState FloatLiteral := do
     let parseResult := FloatLiteral.decimal
       { integerPart := integerPart,
         fractionalPart := fractionalPart,
+        fractionalDigits := fractionalDigits,
         scientificPart := scientificPart
       }
     return parseResult
@@ -203,6 +208,12 @@ def parseArrayLiteral : PState ArrayLiteral := do
       r ← parseListAux ">" "," parseIntegerLiteral
     parseItem ">"
     return ArrayLiteral.array64 r
+  if ← isParse "i32" then
+    let mut r := []
+    if ← isParse ":" then
+      r ← parseListAux ">" "," parseIntegerLiteral
+    parseItem ">"
+    return ArrayLiteral.array32 r
   if ← isParse "i1" then
     let mut r := []
     if ← isParse ":" then

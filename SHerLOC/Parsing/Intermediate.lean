@@ -60,14 +60,19 @@ mutual
         if ← isParse "dot_algorithm" then return Literal.stableHLORecord <| ← parseRecord
         if ← isParse "dot" then return Literal.stableHLORecord <| ← parseRecord
         if ← isParse "channel_handle" then return Literal.stableHLORecord <| ← parseRecord
+        if ← isParse "output_operand_alias" then return Literal.stableHLORecord <| ← parseRecord
         if ← isParse "scatter" then return Literal.stableHLORecord <| ← parseRecord
         if ← isParse "gather" then return Literal.stableHLORecord <| ← parseRecord
       } else return Literal.enum <| ← parseEnumLiteral
     }
 
+    if ← isChar '#' then
+      report "literal of another dialect"
+      return Literal.dialect <| ← parseDialectAttribute
+
     if ← isChar '[' then
       report "literal list"
-      return Literal.list <| ← parseList "[" "]" "," parseLiteral
+      return Literal.list <| ← parseList "[" "]" "," parseTypedLiteral
 
     if ← isChar '{' then
       report "literal attribute"
@@ -78,6 +83,13 @@ mutual
       return Literal.func <| ← parseFuncId
 
     throw <| (← error "literal")
+
+  /-- A list element such as `dense<[1, 0]> : tensor<2xindex>`; the type is dropped. -/
+  partial def parseTypedLiteral : PState Literal := do
+    let literal ← parseLiteral
+    if ← isParse ":" then
+      let _ ← parseType
+    return literal
 
   partial def parseConstant : PState Constant := do
     let literal ← parseLiteral

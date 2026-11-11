@@ -37,6 +37,8 @@ def tryParseFloatType : PState (Option FloatType) := do
     if ← isParse "f16" then r := some FloatType.f16
     if ← isParse "f32" then r := some FloatType.f32
     if ← isParse "f64" then r := some FloatType.f64
+    if ← isParse "f4E2M1FN" then r := some FloatType.f4E2M1FN
+    if ← isParse "f8E8M0FNU" then r := some FloatType.f8E8M0FNU
     if ← isParse "f8E3M4" then r := some FloatType.f8E3M4
     if ← isParse "f8E4M3B11FNUZ" then r := some FloatType.f8E4M3B11FNUZ
     if ← isParse "f8E4M3FNUZ" then r := some FloatType.f8E4M3FNUZ
@@ -87,6 +89,8 @@ partial def parseShape : PState (List DimensionSize) := do
     return []
 
 def parseTensorElementType : PState TensorElementType := do
+  -- `index` is 64 bits wide on the targets this is used for.
+  if ← isParse "index" then return TensorElementType.integerType { sign := Signedness.signed, size := IntegerSize.b64 }
   if let some r ← tryParseIntegerType then return TensorElementType.integerType r
   if ← isParse "i1" then return TensorElementType.booleanType
   if ← is "complex" then return TensorElementType.complexType <| ← parseComplexType

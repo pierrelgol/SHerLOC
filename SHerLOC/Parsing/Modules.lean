@@ -27,13 +27,13 @@ def parseModule : PState Module := do
       parseItems ["}",")"]
       parseItems [":","(",")","->","(",")"]
       return r
-    let region ← parseFunctions
+    let (region, meshes) ← parseFunctions
     parseItems ["}",")"]
     let mut attributes : List Attribute := []
     if ← is "{" then
       attributes ← parseAttributes
     parseItems [":","(",")","->","(",")"]
-    let r : Module := { modId := name, modAttrs := attributes, modFuncs := region }
+    let r : Module := { modId := name, modAttrs := meshes ++ attributes, modFuncs := region }
     return r
   else
     let r : Module := { modId := name, modAttrs := [], modFuncs := [] }
