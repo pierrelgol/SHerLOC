@@ -167,7 +167,7 @@ def parseFId : PState String := do
   let mut token := ""
   for i in [st.index:st.stop] do
     let c := st.source.get! ⟨ i ⟩
-    if c.isAlphanum || c = '_' || c = '.' || c = '"' || c = '<' || c = '>' then token := token.push c
+    if c.isAlphanum || c = '_' || c = '.' || c = '"' || c = '<' || c = '>' || c = '$' then token := token.push c
     else break
   if token.length != 0 then
     set { st with
